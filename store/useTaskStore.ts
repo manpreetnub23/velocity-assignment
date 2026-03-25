@@ -3,7 +3,7 @@ import type { Task } from "../types/task";
 import { generateTasks } from "../utils/generateTasks";
 import { useMemo } from "react";
 
-type Filters = {
+export type Filters = {
 	status: string[];
 	priority: string[];
 	assignee: string[];
@@ -11,7 +11,7 @@ type Filters = {
 	to?: string;
 };
 
-type UserPresence = {
+export type UserPresence = {
 	id: string;
 	name: string;
 	color: string;

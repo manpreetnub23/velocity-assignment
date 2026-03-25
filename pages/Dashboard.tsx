@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
 import { useTaskStore } from '../store/useTaskStore'
 
 const KanbanBoard = lazy(() => import('../src/components/kanban/KanbanBoard'))
@@ -14,15 +14,13 @@ export default function Dashboard() {
     const [menuOpen, setMenuOpen] = useState(false)
 
     const filters = useTaskStore((s) => s.filters)
-    const setFilters = useTaskStore((s) => s.setFilters)
-
     const users = useTaskStore((s) => s.users)
+    const taskCount = useTaskStore((s) => s.tasks.length)
+
+    const setFilters = useTaskStore((s) => s.setFilters)
     const setUsers = useTaskStore((s) => s.setUsers)
 
-    const tasks = useTaskStore((s) => s.tasks) // needed for interval only
-
-
-    const activeUsers = users.filter((u) => u.taskId !== null)
+    const activeUsers = useMemo(() => users.filter((u) => u.taskId !== null), [users])
 
     // URL → filters
     useEffect(() => {
@@ -51,9 +49,11 @@ export default function Dashboard() {
 
     // 👇 HEAVY PART FIXED
     useEffect(() => {
-        if (!tasks.length) return
+        if (!taskCount) return
 
-        const timeout = setTimeout(() => {
+        const interval = setInterval(() => {
+            const tasks = useTaskStore.getState().tasks
+
             setUsers((prev) =>
                 prev.map((user) => ({
                     ...user,
@@ -62,8 +62,8 @@ export default function Dashboard() {
             )
         }, 2000)
 
-        return () => clearTimeout(timeout)
-    }, [tasks])
+        return () => clearInterval(interval)
+    }, [taskCount, setUsers])
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">

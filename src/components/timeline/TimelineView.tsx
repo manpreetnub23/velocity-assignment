@@ -1,4 +1,5 @@
 import { useFilteredTasks } from '../../../store/useTaskStore'
+import { useMemo } from 'react'
 
 const DAY_WIDTH = 36
 
@@ -7,6 +8,21 @@ const priorityBar: Record<string, { bg: string; text: string; border: string }> 
     high: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
     medium: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
     low: { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-300' },
+}
+
+function getDaysFromStart(dateStr: string, startOfMonth: Date) {
+    return Math.floor((new Date(dateStr).getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function getDuration(start?: string, end?: string) {
+    if (!start || !end) return 1
+    return Math.max(
+        1,
+        Math.ceil(
+            (new Date(end).getTime() - new Date(start).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+    )
 }
 
 export default function TimelineView() {
@@ -19,25 +35,19 @@ export default function TimelineView() {
     const startOfMonth = new Date(year, month, 1)
     const endOfMonth = new Date(year, month + 1, 0)
 
+    const processedTasks = useMemo(() => {
+        return filteredTasks.map(task => ({
+            ...task,
+            left: Math.max(0, getDaysFromStart(task.startDate || task.dueDate, startOfMonth)),
+            width: getDuration(task.startDate, task.dueDate) * DAY_WIDTH
+        }))
+    }, [filteredTasks, startOfMonth])
+
     const totalDays = endOfMonth.getDate()
     const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' })
     const todayDay = today.getDate()
 
-    const getDaysFromStart = (dateStr: string) =>
-        Math.floor((new Date(dateStr).getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24))
-
-    const getDuration = (start?: string, end?: string) => {
-        if (!start || !end) return 1
-        return Math.max(
-            1,
-            Math.ceil(
-                (new Date(end).getTime() - new Date(start).getTime()) /
-                (1000 * 60 * 60 * 24)
-            )
-        )
-    }
-
-    const todayOffset = getDaysFromStart(today.toISOString())
+    const todayOffset = getDaysFromStart(today.toISOString(), startOfMonth)
 
     const isWeekend = (i: number) => {
         const d = new Date(year, month, i + 1).getDay()
@@ -101,15 +111,7 @@ export default function TimelineView() {
                                 </p>
                             )}
 
-                            {filteredTasks.slice(0, 50).map((task) => {
-                                const left = Math.max(
-                                    0,
-                                    getDaysFromStart(task.startDate || task.dueDate)
-                                )
-
-                                const width =
-                                    getDuration(task.startDate, task.dueDate) * DAY_WIDTH
-
+                            {processedTasks.slice(0, 50).map((task) => {
                                 const pStyle =
                                     priorityBar[task.priority] ?? priorityBar.low
 
@@ -119,8 +121,8 @@ export default function TimelineView() {
                                             className={`absolute h-5 rounded-md border text-xs px-2 flex items-center truncate
                                                 ${pStyle.bg} ${pStyle.text} ${pStyle.border}`}
                                             style={{
-                                                left: left * DAY_WIDTH,
-                                                width: Math.max(width, DAY_WIDTH),
+                                                left: task.left * DAY_WIDTH,
+                                                width: Math.max(task.width, DAY_WIDTH),
                                             }}
                                         >
                                             {task.title}

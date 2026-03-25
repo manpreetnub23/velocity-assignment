@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useFilteredTasks } from '../../../store/useTaskStore'
+import { memo } from 'react'
 
 const ROW_HEIGHT = 56
 const BUFFER = 5
@@ -17,6 +18,74 @@ const priorityDot: Record<string, string> = {
     high: 'bg-orange-400',
     critical: 'bg-red-500',
 }
+
+const Row = memo(({ task, ss, pd, isEven }: { task: any, ss: any, pd: string, isEven: boolean }) => (
+    <div
+        style={{ height: ROW_HEIGHT }}
+        className={`border-b border-slate-100 hover:bg-slate-50 transition-colors duration-75
+            ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}
+    >
+        {/* Desktop row */}
+        <div className="hidden sm:grid grid-cols-12 items-center h-full px-4 text-sm">
+            <span className="col-span-5 font-medium text-slate-800 truncate pr-4">
+                {task.title}
+            </span>
+
+            <div className="col-span-2 flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-semibold text-slate-500 uppercase">
+                    {task.assignee?.[0] ?? '?'}
+                </div>
+                <span className="text-slate-500 truncate text-xs">
+                    {task.assignee}
+                </span>
+            </div>
+
+            <div className="col-span-2 flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${pd}`} />
+                <span className="text-slate-600 text-xs capitalize">
+                    {task.priority}
+                </span>
+            </div>
+
+            <div className="col-span-2">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${ss.bg} ${ss.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${ss.dot}`} />
+                    {task.status === 'inprogress'
+                        ? 'In Progress'
+                        : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                </span>
+            </div>
+
+            <span className="col-span-1 text-right text-xs text-slate-400">
+                {task.dueDate
+                    ? new Date(task.dueDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                    })
+                    : '—'}
+            </span>
+        </div>
+
+        {/* Mobile row */}
+        <div className="sm:hidden flex items-center gap-3 px-4 h-full">
+            <span className={`w-2 h-2 rounded-full ${pd}`} />
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">
+                    {task.title}
+                </p>
+                <p className="text-xs text-slate-400">
+                    {task.assignee}
+                </p>
+            </div>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${ss.bg} ${ss.text}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${ss.dot}`} />
+                {task.status === 'inprogress'
+                    ? 'In Progress'
+                    : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+            </span>
+        </div>
+    </div>
+))
 
 export default function ListView() {
     const filteredTasks = useFilteredTasks() // ✅ FIXED
@@ -68,74 +137,7 @@ export default function ListView() {
                                 const pd = priorityDot[task.priority]
                                 const isEven = (startIndex + i) % 2 === 0
 
-                                return (
-                                    <div
-                                        key={task.id}
-                                        style={{ height: ROW_HEIGHT }}
-                                        className={`border-b border-slate-100 hover:bg-slate-50 transition-colors duration-75
-                                            ${isEven ? 'bg-white' : 'bg-slate-50/40'}`}
-                                    >
-                                        {/* Desktop row */}
-                                        <div className="hidden sm:grid grid-cols-12 items-center h-full px-4 text-sm">
-                                            <span className="col-span-5 font-medium text-slate-800 truncate pr-4">
-                                                {task.title}
-                                            </span>
-
-                                            <div className="col-span-2 flex items-center gap-1.5">
-                                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-semibold text-slate-500 uppercase">
-                                                    {task.assignee?.[0] ?? '?'}
-                                                </div>
-                                                <span className="text-slate-500 truncate text-xs">
-                                                    {task.assignee}
-                                                </span>
-                                            </div>
-
-                                            <div className="col-span-2 flex items-center gap-1.5">
-                                                <span className={`w-2 h-2 rounded-full ${pd}`} />
-                                                <span className="text-slate-600 text-xs capitalize">
-                                                    {task.priority}
-                                                </span>
-                                            </div>
-
-                                            <div className="col-span-2">
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${ss.bg} ${ss.text}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${ss.dot}`} />
-                                                    {task.status === 'inprogress'
-                                                        ? 'In Progress'
-                                                        : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                                                </span>
-                                            </div>
-
-                                            <span className="col-span-1 text-right text-xs text-slate-400">
-                                                {task.dueDate
-                                                    ? new Date(task.dueDate).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                    })
-                                                    : '—'}
-                                            </span>
-                                        </div>
-
-                                        {/* Mobile row */}
-                                        <div className="sm:hidden flex items-center gap-3 px-4 h-full">
-                                            <span className={`w-2 h-2 rounded-full ${pd}`} />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-800 truncate">
-                                                    {task.title}
-                                                </p>
-                                                <p className="text-xs text-slate-400">
-                                                    {task.assignee}
-                                                </p>
-                                            </div>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${ss.bg} ${ss.text}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${ss.dot}`} />
-                                                {task.status === 'inprogress'
-                                                    ? 'In Progress'
-                                                    : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )
+                                return <Row key={task.id} task={task} ss={ss} pd={pd} isEven={isEven} />
                             })}
                         </div>
                     </div>

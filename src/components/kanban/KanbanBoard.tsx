@@ -1,7 +1,7 @@
 import { useTaskStore, useFilteredTasks } from '../../../store/useTaskStore'
 import { formatDueDate } from '../../../utils/dateUtils'
 import type { Task } from '../../../types/task'
-import { shallow } from 'zustand/shallow'
+import { memo } from 'react'
 
 const columns = ['todo', 'inprogress', 'review', 'done'] as const
 type Status = typeof columns[number]
@@ -19,6 +19,132 @@ const priorityStyles = {
     high: { dot: 'bg-orange-400', text: 'text-orange-700', bg: 'bg-orange-50' },
     critical: { dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' },
 }
+
+const TaskCard = memo(({ task, isDragging, users, setDraggedTask, setPlaceholderTaskId, moveTask }: {
+    task: Task
+    isDragging: boolean
+    users: any[]
+    setDraggedTask: (task: Task | null) => void
+    setPlaceholderTaskId: (id: string | null) => void
+    moveTask: (id: string, status: Task["status"]) => void
+}) => {
+    const pStyle = priorityStyles[task.priority]
+    const taskUsers = users.filter((u) => u.taskId === task.id)
+
+    return (
+        <div key={task.id}>
+            {isDragging && (
+                <div className="h-[88px] rounded-lg border-2 border-dashed border-slate-300 bg-white/50" />
+            )}
+
+            <div
+                className={`bg-white border border-slate-200 rounded-lg p-3 shadow-sm
+                    cursor-grab active:cursor-grabbing select-none
+                    hover:bg-slate-50 hover:shadow-md hover:border-slate-300
+                    transition-all duration-100
+                    ${isDragging ? 'opacity-0' : 'opacity-100'}`}
+                onPointerDown={(e) => {
+                    e.preventDefault()
+                    setDraggedTask(task)
+                    setPlaceholderTaskId(task.id)
+
+                    const el = e.currentTarget
+                    const rect = el.getBoundingClientRect()
+
+                    el.style.position = 'fixed'
+                    el.style.left = rect.left + 'px'
+                    el.style.top = rect.top + 'px'
+                    el.style.width = rect.width + 'px'
+                    el.style.zIndex = '1000'
+                    el.style.pointerEvents = 'none'
+                    el.style.opacity = '0.95'
+                    el.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)'
+                    el.style.transform = 'rotate(1.5deg)'
+
+                    let frame: number | null = null
+
+                    const move = (ev: PointerEvent) => {
+                        if (frame) return
+
+                        frame = requestAnimationFrame(() => {
+                            el.style.left = ev.clientX - rect.width / 2 + 'px'
+                            el.style.top = ev.clientY - rect.height / 2 + 'px'
+                            frame = null
+                        })
+                    }
+
+                    const up = (ev: PointerEvent) => {
+                        const below = document.elementFromPoint(ev.clientX, ev.clientY)
+                        const colEl = below?.closest('[data-column]')
+                        if (colEl) {
+                            moveTask(task.id, colEl.getAttribute('data-column') as Status)
+                        }
+
+                        setDraggedTask(null)
+                        setPlaceholderTaskId(null)
+
+                        el.style.position = ''
+                        el.style.left = ''
+                        el.style.top = ''
+                        el.style.width = ''
+                        el.style.zIndex = ''
+                        el.style.pointerEvents = ''
+                        el.style.opacity = ''
+                        el.style.boxShadow = ''
+                        el.style.transform = ''
+
+                        window.removeEventListener('pointermove', move)
+                        window.removeEventListener('pointerup', up)
+                    }
+
+                    window.addEventListener('pointermove', move)
+                    window.addEventListener('pointerup', up)
+                }}
+            >
+                <p className="text-sm font-medium text-slate-800 leading-snug mb-2">
+                    {task.title}
+                </p>
+
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-semibold text-slate-500 uppercase shrink-0">
+                            {task.assignee?.[0] ?? '?'}
+                        </div>
+                        <span className="text-xs text-slate-400 truncate">{task.assignee}</span>
+                    </div>
+
+                    <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0 ${pStyle.bg} ${pStyle.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${pStyle.dot}`} />
+                        {task.priority}
+                    </span>
+                </div>
+
+                <div className="mt-1.5 text-[11px] text-slate-400">
+                    {formatDueDate(task.dueDate)}
+                </div>
+
+                {taskUsers.length > 0 && (
+                    <div className="flex -space-x-2 mt-2">
+                        {taskUsers.slice(0, 2).map((u) => (
+                            <div
+                                key={u.id}
+                                className="w-6 h-6 rounded-full text-white text-[10px] flex items-center justify-center border-2 border-white"
+                                style={{ backgroundColor: u.color }}
+                            >
+                                {u.name}
+                            </div>
+                        ))}
+                        {taskUsers.length > 2 && (
+                            <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center border-2 border-white">
+                                +{taskUsers.length - 2}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+})
 
 export default function KanbanBoard() {
     const filteredTasks = useFilteredTasks() // ✅ FIXED
@@ -69,115 +195,8 @@ export default function KanbanBoard() {
 
                             {colTasks.map((task) => {
                                 const isDragging = draggedTask?.id === task.id
-                                const pStyle = priorityStyles[task.priority]
-                                const taskUsers = users.filter((u) => u.taskId === task.id)
 
-                                return (
-                                    <div key={task.id}>
-                                        {isDragging && (
-                                            <div className="h-[88px] rounded-lg border-2 border-dashed border-slate-300 bg-white/50" />
-                                        )}
-
-                                        <div
-                                            className={`bg-white border border-slate-200 rounded-lg p-3 shadow-sm
-                                                cursor-grab active:cursor-grabbing select-none
-                                                hover:bg-slate-50 hover:shadow-md hover:border-slate-300
-                                                transition-all duration-100
-                                                ${isDragging ? 'opacity-0' : 'opacity-100'}`}
-                                            onPointerDown={(e) => {
-                                                e.preventDefault()
-                                                setDraggedTask(task)
-                                                setPlaceholderTaskId(task.id)
-
-                                                const el = e.currentTarget
-                                                const rect = el.getBoundingClientRect()
-
-                                                el.style.position = 'fixed'
-                                                el.style.left = rect.left + 'px'
-                                                el.style.top = rect.top + 'px'
-                                                el.style.width = rect.width + 'px'
-                                                el.style.zIndex = '1000'
-                                                el.style.pointerEvents = 'none'
-                                                el.style.opacity = '0.95'
-                                                el.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)'
-                                                el.style.transform = 'rotate(1.5deg)'
-
-                                                const move = (ev: PointerEvent) => {
-                                                    el.style.left = ev.clientX - rect.width / 2 + 'px'
-                                                    el.style.top = ev.clientY - rect.height / 2 + 'px'
-                                                }
-
-                                                const up = (ev: PointerEvent) => {
-                                                    const below = document.elementFromPoint(ev.clientX, ev.clientY)
-                                                    const colEl = below?.closest('[data-column]')
-                                                    if (colEl) {
-                                                        moveTask(task.id, colEl.getAttribute('data-column') as Status)
-                                                    }
-
-                                                    setDraggedTask(null)
-                                                    setPlaceholderTaskId(null)
-
-                                                    el.style.position = ''
-                                                    el.style.left = ''
-                                                    el.style.top = ''
-                                                    el.style.width = ''
-                                                    el.style.zIndex = ''
-                                                    el.style.pointerEvents = ''
-                                                    el.style.opacity = ''
-                                                    el.style.boxShadow = ''
-                                                    el.style.transform = ''
-
-                                                    window.removeEventListener('pointermove', move)
-                                                    window.removeEventListener('pointerup', up)
-                                                }
-
-                                                window.addEventListener('pointermove', move)
-                                                window.addEventListener('pointerup', up)
-                                            }}
-                                        >
-                                            <p className="text-sm font-medium text-slate-800 leading-snug mb-2">
-                                                {task.title}
-                                            </p>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                    <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-semibold text-slate-500 uppercase shrink-0">
-                                                        {task.assignee?.[0] ?? '?'}
-                                                    </div>
-                                                    <span className="text-xs text-slate-400 truncate">{task.assignee}</span>
-                                                </div>
-
-                                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0 ${pStyle.bg} ${pStyle.text}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${pStyle.dot}`} />
-                                                    {task.priority}
-                                                </span>
-                                            </div>
-
-                                            <div className="mt-1.5 text-[11px] text-slate-400">
-                                                {formatDueDate(task.dueDate)}
-                                            </div>
-
-                                            {taskUsers.length > 0 && (
-                                                <div className="flex -space-x-2 mt-2">
-                                                    {taskUsers.slice(0, 2).map((u) => (
-                                                        <div
-                                                            key={u.id}
-                                                            className="w-6 h-6 rounded-full text-white text-[10px] flex items-center justify-center border-2 border-white"
-                                                            style={{ backgroundColor: u.color }}
-                                                        >
-                                                            {u.name}
-                                                        </div>
-                                                    ))}
-                                                    {taskUsers.length > 2 && (
-                                                        <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center border-2 border-white">
-                                                            +{taskUsers.length - 2}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )
+                                return <TaskCard key={task.id} task={task} isDragging={isDragging} users={users} setDraggedTask={setDraggedTask} setPlaceholderTaskId={setPlaceholderTaskId} moveTask={moveTask} />
                             })}
                         </div>
                     </div>
