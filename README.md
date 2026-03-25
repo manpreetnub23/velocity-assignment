@@ -82,7 +82,7 @@ npm install
 npm run 
 
 # image of performance score 
-![Performance Screenshot](./assets/performance.png)
+![Performance Screenshot](./src/assets/performance.png)
 
 # State Management Choice
 # Zustand was used because:
