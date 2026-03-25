@@ -80,3 +80,33 @@ git clone <repo-url>
 cd project
 npm install
 npm run 
+
+# image of performance score 
+![Performance Screenshot](./assets/performance.png)
+
+# State Management Choice
+# Zustand was used because:
+
+# Lightweight and simple
+# No boilerplate (compared to Redux)
+# Easy global state sharing across views
+# Perfect for UI-heavy applications
+
+# Virtual Scrolling Approach
+# Calculated visible rows using scroll position
+# Only rendered visible + buffer rows
+# Used a container with total height
+# Positioned rows using absolute positioning
+
+# Virtual Scrolling Approach
+# Calculated visible rows using scroll position
+# Only rendered visible + buffer rows
+# Used a container with total height
+# Positioned rows using absolute positioning
+
+# Drag-and-Drop Approach
+# Implemented using pointer events
+# Card converted to floating element on drag
+# Placeholder inserted to prevent layout shift
+# Drop zones detected using DOM APIs
+# State updated on valid drop

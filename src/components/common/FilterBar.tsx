@@ -36,7 +36,6 @@ export default function FilterBar() {
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
-    /* Close on Escape */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
         document.addEventListener('keydown', handler)
@@ -69,6 +68,7 @@ export default function FilterBar() {
 
             {/* Trigger */}
             <button
+                type="button"
                 onClick={() => setOpen((o) => !o)}
                 aria-haspopup="true"
                 aria-expanded={open}
@@ -94,20 +94,25 @@ export default function FilterBar() {
                 )}
             </button>
 
-            {/* Popover */}
+            {/* Popover — anchors left on mobile, centered on larger screens */}
             {open && (
                 <div
                     role="dialog"
                     aria-label="Filter options"
-                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50
-                        w-[calc(100vw-2rem)] sm:w-[90vw] md:w-[75vw] lg:w-[70vw]
-                        bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"
+                    className="
+                        absolute top-full mt-2 z-50
+                        left-0 w-[calc(100vw-2rem)]
+                        sm:left-1/2 sm:-translate-x-1/2 sm:w-[90vw]
+                        md:w-[680px]
+                        bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden
+                    "
                 >
                     {/* Panel header */}
                     <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100">
                         <span className="text-sm font-semibold text-slate-700">Filters</span>
                         {activeCount > 0 && (
                             <button
+                                type="button"
                                 onClick={clearAll}
                                 className="text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
                             >
@@ -116,8 +121,8 @@ export default function FilterBar() {
                         )}
                     </div>
 
-                    {/* Grid: 2-col on mobile, 4-col on md+ */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100 p-4 sm:p-5 gap-y-4 md:gap-y-0">
+                    {/* Grid: 1-col on mobile, 2-col on sm, 4-col on md */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y md:divide-y-0 md:divide-x divide-slate-100 p-4 sm:p-5 gap-y-4 md:gap-y-0">
 
                         {/* STATUS */}
                         <div className="md:pr-5">
@@ -129,6 +134,7 @@ export default function FilterBar() {
                                     return (
                                         <button
                                             key={s}
+                                            type="button"
                                             onClick={() => toggle('status', s)}
                                             className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm transition-all duration-100 w-full text-left
                                                 ${isActive ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
@@ -147,7 +153,7 @@ export default function FilterBar() {
                         </div>
 
                         {/* PRIORITY */}
-                        <div className="md:px-5 pl-4 md:pl-5">
+                        <div className="sm:pl-4 md:px-5">
                             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Priority</p>
                             <div className="flex flex-col gap-1">
                                 {priorities.map((p) => {
@@ -156,6 +162,7 @@ export default function FilterBar() {
                                     return (
                                         <button
                                             key={p}
+                                            type="button"
                                             onClick={() => toggle('priority', p)}
                                             className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm transition-all duration-100 w-full text-left
                                                 ${isActive ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
@@ -182,6 +189,7 @@ export default function FilterBar() {
                                     return (
                                         <button
                                             key={u}
+                                            type="button"
                                             onClick={() => toggle('assignee', u)}
                                             aria-pressed={isActive}
                                             aria-label={`Assignee ${u}`}
@@ -199,7 +207,7 @@ export default function FilterBar() {
                         </div>
 
                         {/* DATE RANGE */}
-                        <div className="md:pl-5 pl-4">
+                        <div className="md:pl-5">
                             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Due Date</p>
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
